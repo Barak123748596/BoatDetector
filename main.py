@@ -6,6 +6,8 @@ import pySaliencyMap
 import numpy as np
 import time
 import os
+import math
+from geopy.distance import vincenty
 
 def arg_parse():
     parser = argparse.ArgumentParser()
@@ -101,7 +103,11 @@ def extractWater(satellite, mask):
     cv2.imwrite("satellite_0_water_remove.jpg", satellite)
     return satellite, origin_image
 
-def detectContour(binary_image, origin_image):
+def detectContour(binary_image, origin_image, center, args):
+    log = args.longtitude
+    lat = args.latitude
+    zoom =args.zoom
+
     _, contours,_ = cv2.findContours(binary_image,cv2.RETR_EXTERNAL,cv2.CHAIN_APPROX_SIMPLE)
     img = origin_image.copy()
     count=0
@@ -110,9 +116,8 @@ def detectContour(binary_image, origin_image):
             area = cv2.contourArea(cnt)
             (X,Y),(ma,Ma),angle = cv2.fitEllipse(cnt)
             if area>500:
-                x,y,w,h = cv2.boundingRect(cnt)
+                x,y,W,H = cv2.boundingRect(cnt)
                 rect = cv2.minAreaRect(cnt)
-                print(rect)
                 box = cv2.boxPoints(rect)
                 box = np.int0(box)
                 crop = crop_minAreaRect(origin_image, rect)
@@ -120,6 +125,25 @@ def detectContour(binary_image, origin_image):
 
                 if (max(w,h)*1.0/min(w,h) > 2):
                     img = cv2.drawContours(img,[box],-1,(0,255,0),2)
+                    
+                    dist_x = x+ W/2 -center[0]
+                    dist_y = y+ H/2 -center[1]
+
+                    center_latitude = lat+dist_x/ math.pow(2, zoom+1)
+                    center_longtitude = log-dist_y/math.pow(2,zoom+1)
+
+                    cv2.putText(img,"({},{})".format(center_longtitude,center_latitude),(x,y+H/2), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),2)
+                    img = cv2.circle(img,(x+W/2,y+H/2), 5, (0,0,255), -1)
+                    
+                    dist_x = x -center[0]
+                    dist_y = y -center[1]
+
+                    corner_latitude = lat+dist_x/ math.pow(2, zoom+1)
+                    corner_longtitude = log-dist_y/math.pow(2,zoom+1)
+
+                    length = 2*vincenty((center_longtitude,center_latitude), (corner_longtitude, corner_latitude)).meters             
+                    cv2.putText(img,"length:{}".format(length),(x,y+H), cv2.FONT_HERSHEY_SIMPLEX, 0.5,(255,255,255),2)
+                    
                     name = "{}.png".format(count)
                     cv2.imwrite(name, crop)
                     print(name+" saved")
@@ -157,6 +181,7 @@ def main():
         print("download error")
         return False
     satellite = cv2.imread(save_files[0])
+    center = (satellite.shape[0]/2,satellite.shape[1]/2)
     mask = cv2.imread(save_files[1],0)
    
     print("Water extracting...\n")
@@ -175,7 +200,7 @@ def main():
     binary_img = binary_img.astype(np.uint8)
     
     print("Detecting object...\n")
-    detectContour(binary_img, origin_image)
+    detectContour(binary_img, origin_image, center, args)
 
 if __name__ == '__main__':
     main()
