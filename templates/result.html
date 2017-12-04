@@ -1,0 +1,62 @@
+ <!DOCTYPE html>
+ <html>
+ <head>
+ <style>
+ * {
+     box-sizing: border-box;
+ }
+ 
+ body {
+     margin: 0;
+ }
+ 
+ /* Create two equal columns that floats next to each other */
+ .column {
+     float: left;
+     width: 50%;
+     padding: 10px;
+     height: 300px; /* Should be removed. Only for demonstration */
+ }
+ 
+ /* Clear floats after the columns */
+ .row:after {
+     content: "";
+     display: table;
+     clear: both;
+ }
+ img.size{
+    height: auto; 
+    width: auto; 
+    max-width: 500px; 
+    max-height: 500px;
+}
+img.candidate_size{
+    height: auto; 
+    width: auto; 
+    max-width: 250px; 
+    max-height: 250px;
+}
+ul.candidates li {
+    width: 300px;
+    display: inline-block;
+    vertical-align: top;
+}
+</style>
+</head>
+
+<body>
+    <h2>Boat Detector</h2>
+    <div class="row">
+        <div class="column">
+            <h2>Image</h2>
+            <img class="size" src="{{url_for('static', filename=image ) }}" alt="Google Image" /> </div>
+        <div class="column">
+            <h2>Candidate</h2>
+           <ul class="candidates">
+            {% for i in candidates%}
+            <li><img class="candidate_size" src="{{url_for('static', filename=i ) }}" alt="Google Image" /></li>
+            {% endfor %}
+        </ul></div>
+</body>
+</html>
+ 
